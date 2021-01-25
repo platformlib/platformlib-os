@@ -1,0 +1,3 @@
+dependencies {
+    api group: 'com.platformlib', name: 'platformlib-process-api', version: project['platformlib-proceess.version']
+}

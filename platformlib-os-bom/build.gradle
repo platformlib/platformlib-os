@@ -1,0 +1,28 @@
+plugins {
+    id 'java-platform'
+    id 'signing'
+}
+
+dependencies {
+    constraints {
+        api project(':platformlib-os-api')
+        api project(':platformlib-os-core')
+        api project(':platformlib-os-local')
+    }
+}
+
+apply plugin: 'maven-publish'
+
+signing {
+    sign publishing.publications
+    required { project.version != '1.0-SNAPSHOT' }
+}
+
+publishing {
+    publications {
+        platformibProcess(MavenPublication) {
+            from components.javaPlatform
+            configurePom(pom)
+        }
+    }
+}

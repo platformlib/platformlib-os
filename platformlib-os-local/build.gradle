@@ -1,0 +1,15 @@
+configurations {
+    groovyLib
+}
+
+dependencies {
+    api group: 'com.platformlib', name: 'platformlib-process-local', version: project['platformlib-proceess.version']
+    api project(':platformlib-os-core')
+    groovyLib group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.6'
+}
+
+processTestResources {
+    from (configurations.groovyLib) {
+        into 'groovy'
+    }
+}
