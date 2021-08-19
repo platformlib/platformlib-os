@@ -10,13 +10,14 @@ import com.platformlib.os.core.AbstractOsPlatform;
 import com.platformlib.os.core.bean.DiskSpaceInfoBean;
 import com.platformlib.os.core.bean.OsProcessBean;
 import com.platformlib.os.core.bean.OsVersionBean;
+import com.platformlib.os.core.bean.WindowsOsUserBean;
 import com.platformlib.os.core.util.OsUtilities;
 import com.platformlib.process.api.ProcessInstance;
-import com.platformlib.process.configurator.ProcessOutputConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +32,7 @@ public class WindowsOsInterfaceImpl implements WindowsOsInterface {
 
     @Override
     public final OsVersion getOsVersion() {
-        final String systemInfoCommandOutput = osPlatform.shortOsCommand("systeminfo", "/FO", "CSV");
+        final String systemInfoCommandOutput = osPlatform.osCommand("systeminfo", "/FO", "CSV");
         final String[] lines = systemInfoCommandOutput.split("\\r?\\n");
         final String[] headers = lines[0].split(",\"");
         final String[] data = lines[1].split(",\"");
@@ -48,84 +49,51 @@ public class WindowsOsInterfaceImpl implements WindowsOsInterface {
     @Override
     public Collection<OsProcess> getOsProcesses() {
         final List<OsProcess> processes = new ArrayList<>();
-        final ProcessInstance processInstance = osPlatform
-                .newProcessBuilder()
-                .processInstance(ProcessOutputConfigurator::unlimited)
-                .logger(configurator -> configurator.logger(LOGGER))
-                .build()
-                .execute("wmic", "process", "get", "processid,parentprocessid")
-                .toCompletableFuture()
-                .join();
-        if (processInstance.getExitCode() != 0) {
-            LOGGER.error("The wmic process get processid,parentprocessid exit code isn't zero [{}]", processInstance.getExitCode());
-            if (!LOGGER.isTraceEnabled()) {
-                processInstance.getStdOut().forEach(line -> LOGGER.error("The wmic stdout: {}", line));
-                processInstance.getStdErr().forEach(line -> LOGGER.error("The wmic stderr: {}", line));
-            }
-            throw new RuntimeException("Fail to run wmic command");
-        }
-        if (processInstance.getStdOut().isEmpty()) {
+        final String stdOut = osPlatform.osCommand("wmic", "process", "get", "processid,parentprocessid");
+        if (stdOut.isEmpty()) {
             LOGGER.warn("The wmic command output is empty");
             return Collections.emptyList();
         }
-        final List<String> stdOut = new ArrayList<>(processInstance.getStdOut());
-        if (!stdOut.get(0).trim().matches("(?i)ParentProcessId\\s+ProcessId")) {
+        final String[] lines = stdOut.split("\\r?\\n");
+        if (!lines[0].trim().matches("(?i)ParentProcessId\\s+ProcessId")) {
             LOGGER.error("Non standard wmic header: {}", stdOut);
-            processInstance.getStdErr().forEach(line -> LOGGER.error("The ps stderr: '{}'", line));
             throw new RuntimeException("Fail to run wmic command");
         }
-
-        stdOut.remove(0);
-        stdOut.forEach(line -> {
+        for (int i = 1; i < lines.length; i++) {
+            final String line = lines[0];
             if (!line.trim().isEmpty()) {
                 final String[] psParts = line.trim().split("\\s+", 2);
                 if (psParts.length != 2) {
-                    if (!LOGGER.isTraceEnabled()) {
-                        stdOut.forEach(stdOutline -> LOGGER.error("The wmic stdout: {}", stdOutline));
+                    if (!LOGGER.isDebugEnabled()) {
+                        LOGGER.error("The wmic stdout: {}", stdOut);
                     }
                     throw new RuntimeException("Fail to parse wmic stdout: " + line);
                 }
                 processes.add(new OsProcessBean(null, Integer.parseInt(psParts[1]), Integer.parseInt(psParts[0])));
             }
-        });
+        }
         return Collections.unmodifiableCollection(processes);
     }
 
     @Override
     public int kill(final int pid) {
-        final List<String> stdOut = new ArrayList<>();
-        final List<String> stdErr = new ArrayList<>();
-        final int exitCode = osPlatform.newProcessBuilder()
-                .stdErrConsumer(stdErr::add)
-                .stdOutConsumer(stdOut::add).build().execute("taskkill", "/PID", String.valueOf(pid), "/F", "/T")
+        final ProcessInstance processInstance = osPlatform.newProcessBuilder()
+                .logger(conf -> conf.logger(LOGGER))
+                .build().execute("taskkill", "/PID", String.valueOf(pid), "/F", "/T")
                 .toCompletableFuture()
-                .join().getExitCode();
-        if (exitCode != 0 && !LOGGER.isTraceEnabled()) {
-            stdOut.forEach(line -> LOGGER.error("The taskkill stdout: {}", line));
-            stdErr.forEach(line -> LOGGER.error("The taskkill stderr: {}", line));
+                .join();
+        if (processInstance.getExitCode() != 0 && !LOGGER.isDebugEnabled()) {
+            LOGGER.error("The taskkill stdout: {}", processInstance.getStdOut());
+            LOGGER.error("The taskkill stderr: {}", processInstance.getStdErr());
         }
-        return exitCode;
+        return processInstance.getExitCode();
     }
 
     @Override
-    public DiskSpaceInfo getDiskSpaceInfo(String file) {
-        final List<String> stdOut = new ArrayList<>();
-        final List<String> stdErr = new ArrayList<>();
-        final int exitCode = osPlatform
-                .newProcessBuilder()
-                .stdErrConsumer(stdErr::add)
-                .stdOutConsumer(stdOut::add)
-                .build()
-                .execute("wmic", "logicaldisk", "get", "size,freespace,caption")
-                .toCompletableFuture()
-                .join()
-                .getExitCode();
-        if (exitCode != 0 && !LOGGER.isTraceEnabled()) {
-            stdOut.forEach(line -> LOGGER.error("The wmic stdout: {}", line));
-            stdErr.forEach(line -> LOGGER.error("The wmic stderr: {}", line));
-        }
+    public DiskSpaceInfo getDiskSpaceInfo(final String file) {
+        final String stdOut = osPlatform.osCommand("wmic", "logicaldisk", "get", "size,freespace,caption");
         final String letter = file.substring(0, 1);
-        final String fileSystemLine = stdOut.stream().filter(line -> line.startsWith(letter + ":")).findAny().orElseThrow(() -> {
+        final String fileSystemLine = Arrays.stream(stdOut.split("\\r?\\n")).filter(line -> line.startsWith(letter + ":")).findAny().orElseThrow(() -> {
             LOGGER.error("Letter '{}', wmci output {}", letter, stdOut);
             return new RuntimeException("No filesystem found");
         });
@@ -137,7 +105,10 @@ public class WindowsOsInterfaceImpl implements WindowsOsInterface {
 
     @Override
     public WindowsOsUser getCurrentUser() {
-        //TODO implement
-        throw new IllegalStateException("Not implemented");
+        final String usernameAndDomain = osPlatform.osCommand("echo", "%USERNAME% # %USERDOMAIN%");
+        final String[] parts = usernameAndDomain.split("#", 2);
+        final String username = parts[0].trim();
+        final String domain = parts.length > 1 ? parts[1].trim() : null;
+        return new WindowsOsUserBean(username, domain);
     }
 }

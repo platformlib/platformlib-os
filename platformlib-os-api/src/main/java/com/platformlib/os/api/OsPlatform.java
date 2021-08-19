@@ -3,7 +3,6 @@ package com.platformlib.os.api;
 import com.platformlib.os.api.osi.OsInterface;
 import com.platformlib.os.api.enums.OperationSystem;
 import com.platformlib.os.api.enums.OsFamily;
-import com.platformlib.os.api.exception.UnknownOperationSystemException;
 import com.platformlib.process.builder.ProcessBuilder;
 
 import java.io.Closeable;
@@ -18,7 +17,6 @@ public interface OsPlatform extends Closeable {
     /**
      * Get operation system.
      * @return Returns operation system type
-     * @throws UnknownOperationSystemException if operation system couldn't be detected
      */
     OperationSystem getOsSystem();
 
@@ -33,12 +31,6 @@ public interface OsPlatform extends Closeable {
      * @return Returns file system
      */
     FileSystem getFileSystem();
-
-    /**
-     * Get current username
-     * @return Returns current username
-     */
-    String getUsername();
 
     /**
      * Get new process builder.

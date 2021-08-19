@@ -13,7 +13,7 @@ public class AixOsInterfaceImpl extends PosixOsInterfaceImpl {
 
     @Override
     public final OsVersion getOsVersion() {
-        final String osLevelContent = getOsPlatform().shortOsCommand("oslevel");
+        final String osLevelContent = getOsPlatform().osCommand("oslevel");
         final String[] aixVersionParts = OsUtilities.filterVersionDigits(osLevelContent).split("\\.");
         return new OsVersionBean(OsUtilities.parseVersionDigits(aixVersionParts[0]).orElse(-1), aixVersionParts.length > 1 ? OsUtilities.parseVersionDigits(aixVersionParts[1]).orElse(null) : null);
     }

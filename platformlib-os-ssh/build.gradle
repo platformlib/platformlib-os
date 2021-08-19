@@ -1,0 +1,10 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    api project(":platformlib-os-core")
+    api group: 'com.platformlib', name: 'platformlib-process-ssh', version: project['platformlib-process.version']
+    testImplementation testFixtures(project(":platformlib-os-core"))
+    testImplementation testFixtures(group: 'com.platformlib', name: 'platformlib-process-ssh', version: project['platformlib-process.version'])
+}

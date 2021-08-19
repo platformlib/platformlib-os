@@ -27,7 +27,7 @@ class PosixOsInterfaceTest {
         final PosixOsInterfaceImpl posixOsInterface = Mockito.mock(PosixOsInterfaceImpl.class, Mockito.CALLS_REAL_METHODS);
         final AbstractOsPlatform abstractOsPlatform = Mockito.mock(AbstractOsPlatform.class);
         when(posixOsInterface.getOsPlatform()).thenReturn(abstractOsPlatform);
-        when(abstractOsPlatform.shortOsCommand("id")).thenReturn(idOutput);
+        when(abstractOsPlatform.osCommand("id")).thenReturn(idOutput);
         final PosixOsUser posixOsUser = posixOsInterface.getCurrentUser();
         assertEquals(userId, posixOsUser.getUser().getId());
         assertEquals(username, posixOsUser.getUser().getName());

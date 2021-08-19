@@ -7,6 +7,7 @@
         </encoder>
     </appender>
     <logger name="com.platformlib" level="DEBUG" />
+    <!-- <logger name="org.apache" level="TRACE" /> -->
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

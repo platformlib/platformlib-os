@@ -1,3 +1,11 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
 dependencies {
     api project(':platformlib-os-api')
+    testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:${project.'junit-jupiter.version'}"
+    testFixturesImplementation group: 'org.assertj', name: 'assertj-core', version: project['assertj.version']
+    testFixturesApi group: 'com.github.oshi', name: 'oshi-core', version: project['oshi.version']
+
 }

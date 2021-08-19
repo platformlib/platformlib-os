@@ -36,7 +36,7 @@ public abstract class PosixOsInterfaceImpl implements PosixOsInterface {
 
     @Override
     public PosixOsUser getCurrentUser() {
-        final String idCommandOutput = getOsPlatform().shortOsCommand("id");
+        final String idCommandOutput = getOsPlatform().osCommand("id");
         final IdNamePair user = parseIdAndName("uid=", idCommandOutput);
         final IdNamePair group = parseIdAndName("gid=", idCommandOutput);
         return new PosixOsUserBean(new PosixUserBean(user.getId(), user.getName()), new PosixGroupBean(group.getId(), group.getName()));

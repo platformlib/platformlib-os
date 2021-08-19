@@ -16,7 +16,7 @@ public class MacOsInterfaceImpl extends PosixOsInterfaceImpl {
 
     @Override
     public final OsVersion getOsVersion() {
-        final String swVersCommandOutput = getOsPlatform().shortOsCommand("sw_vers", "-productVersion");
+        final String swVersCommandOutput = getOsPlatform().osCommand("sw_vers", "-productVersion");
         final String[] macVersionParts = OsUtilities.filterVersionDigits(swVersCommandOutput).split("\\.");
         return new OsVersionBean(OsUtilities.parseVersionDigits(macVersionParts[0]).orElse(-1), macVersionParts.length > 1 ? OsUtilities.parseVersionDigits(macVersionParts[1]).orElse(null) : null);
     }
